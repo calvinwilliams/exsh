@@ -1,0 +1,5 @@
+if [ -d $HOME/.logbak ] ; then
+	cd $HOME/.logbak
+	find . -name "*.tar" -mtime +30 -exec rm {} \; -print
+fi
+

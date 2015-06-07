@@ -1,0 +1,15 @@
+if [ -n "$LOGNAME" -a -d "$HOME/log" -a -d "$HOME/.logbak" ] ; then
+	DATETIME=`/bin/date +%Y%m%d%H%M%S`
+	TAR_PATHFILENAME="${HOME}/.logbak/log_${DATETIME}.tar"
+	
+	cd $HOME/log
+	find . -type f -name "*.log*" | xargs /bin/tar rvf $TAR_PATHFILENAME
+	find . -type f -name "*.log*" | xargs /bin/rm -f
+else
+	echo "*** ERROR : Environment Invalid"
+	echo "    \$LOGNAME[$LOGNAME]"
+	echo "*** ERROR : Directory Invalid"
+	echo "    \$HOME/log[$HOME/log]"
+	echo "    \$HOME/.logbak[$HOME/.logbak]"
+fi
+

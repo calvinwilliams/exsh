@@ -1,0 +1,38 @@
+# SQL Shell Tool
+# copyright calvin 2003,2010,2014
+
+if [ $# -eq 0 ] ; then
+	echo "exptbl.sh tablename"
+	exit 7;
+fi
+
+sql=$1
+table_name=$1
+
+datetime=`date +"%Y%m%d_%H%M%S"`
+infile=/tmp/exptbls.in.$$
+
+> $infile
+
+if [ x"$DBTYPE" = x"ORACLE" ] ; then
+	echo "set head off" >> $infile
+	echo "set pagesize 64" >> $infile
+	echo "set linesize 2048" >> $infile
+	echo "set colsep |" >> $infile
+	echo "set client_encoding to 'gb18030';" >> $infile
+elif [ x"$DBTYPE" = x"PGSQL" ] ; then
+	echo "set client_encoding to 'gb18030';" >> $infile
+fi
+
+echo "select * from $table_name;" >> $infile
+
+cat $infile | sqlpipe \
+| grep -v "rows selected." \
+| sed "s/[[:space:]][[:space:]]*//g" \
+| sed "/^$/d" \
+| sed "s/|/','/g" \
+| sed "s/^/INSERT INTO "$table_name" VALUES\('/g" \
+| sed "s/$/');/g" \
+
+rm $infile
+

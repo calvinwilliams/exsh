@@ -1,0 +1,20 @@
+#!/bin/sh
+
+if [ $# -le 1 ] ; then
+	echo "USAGE : rmcp src_file dst_file"
+fi
+
+ALL_PARA=$@
+
+index=1
+for file in $@ 
+do 
+  if [ $index -gt 1 ]&&[ $index -lt $# ]; then
+	b=`basename $file`
+	rm -f ${!#}$b
+  fi
+  index=`expr $index + 1` 
+done
+# echo "cp $ALL_PARA"
+cp $ALL_PARA
+

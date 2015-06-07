@@ -1,0 +1,8 @@
+if [ -d $HOME/log ] ; then
+	cd $HOME/log
+	find . -name "*.log" -exec rm {} \; -print
+	find . -name "*.log*" -exec rm {} \; -print
+else
+	echo "HOME[$HOME]"
+fi
+

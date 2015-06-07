@@ -1,0 +1,30 @@
+# SQL Shell Tool
+# copyright by calvin 2003,2010
+
+if [ x"$DBTYPE" = x"" ] ; then
+	echo "未设置环境变量 DBTYPE"
+	exit 1
+fi
+if [ x"$DBUSER" = x"" ] ; then
+	echo "未设置环境变量 DBUSER"
+	exit 1
+fi
+if [ x"$DBPASS" = x"" ] ; then
+	echo "未设置环境变量 DBPASS"
+	exit 1
+fi
+
+if [ x"$DBTYPE" = x"ORACLE" ] ; then
+	if [ x"$DBHOST" = x"" ] ; then
+		sqlplus $DBUSER/$DBPASS
+	else
+		sqlplus $DBUSER/$DBPASS@$DBHOST
+	fi
+elif [ x"$DBTYPE" = x"PGSQL" ] ; then
+	if [ x"$DBHOST" = x"" ] ; then
+		psql -d $DBNAME-U $DBUSER -P $USERPASS
+	else
+		psql -h $DBHOST -p $DBPORT -d $DBNAME -U $DBUSER
+	fi
+fi
+

@@ -1,0 +1,48 @@
+# batch rename files
+# copyright by calvin 2013
+
+if [ $# -ne 3 ] ; then
+	echo "USAGE : svnbmv.sh \"FILES\" SRCSTR DSTSTR"
+	exit 9
+fi
+
+FILES=$1
+SRCSTR=$2
+DSTSTR=$3
+
+CNT=0
+for FILENAME in `ls -d $FILES` ; do
+	NEWFILENAME=`echo $FILENAME | sed "s/$SRCSTR/$DSTSTR/g"`
+	if [ x"$NEWFILENAME" = x"$FILENAME" ] ; then
+		continue
+	fi
+	COMMAND="svn mv $FILENAME $NEWFILENAME"
+	echo $COMMAND
+	
+	CNT=`expr $CNT + 1`
+done
+
+if [ $CNT -eq 0 ] ; then
+	echo "无匹配文件"
+	exit 0
+fi
+
+printf "涉及文件数量%d个，确认改名? " $CNT
+read YN
+if [ x"$YN" != x"y" ] ; then
+	exit 0
+fi
+
+CNT=0
+for FILENAME in `ls -d $FILES` ; do
+	NEWFILENAME=`echo $FILENAME | sed "s/$SRCSTR/$DSTSTR/g"`
+	if [ x"$NEWFILENAME" = x"$FILENAME" ] ; then
+		continue
+	fi
+	COMMAND="svn mv $FILENAME $NEWFILENAME"
+	$COMMAND
+	
+	CNT=`expr $CNT + 1`
+done
+printf "完成，共处理了%d个文件\n" $CNT
+

@@ -1,0 +1,57 @@
+# batch replace string in files
+# copyright by calvin in 2013
+
+if [ $# -ne 3 ] ; then
+	echo "USAGE : bstr \"FILES\" SRCSTR DSTSTR"
+	exit 9
+fi
+
+FILES=$1
+SRCSTR=$2
+DSTSTR=$3
+
+CNT=0
+for FILENAME in `ls -d $FILES` ; do
+	FLG=0
+	while read LINE ; do
+		echo "$LINE" | grep "\/\*" > /dev/null
+		if [ $? -eq 0 ] ; then
+			continue
+		fi
+		
+		NEWLINE=`echo $LINE | sed "s/$SRCSTR/$DSTSTR/g"`
+		if [ x"$NEWLINE" = x"$LINE" ] ; then
+			continue
+		fi
+		echo "$FILENAME : [$LINE] -> [$NEWLINE]"
+		FLG=1
+	done < $FILENAME
+	
+	if [ $FLG -eq 1 ] ; then
+		CNT=`expr $CNT + 1`
+	fi
+done
+
+if [ $CNT -eq 0 ] ; then
+	echo "无匹配文件"
+	exit 0
+fi
+
+printf "涉及文件数量%d个，确认替换文件内容? " $CNT
+read YN
+if [ x"$YN" != x"y" ] ; then
+	exit 0
+fi
+
+CNT=0
+for FILENAME in `ls -d $FILES` ; do
+	grep "$SRCSTR" $FILENAME > /dev/null
+	if [ $? -eq 0 ] ; then
+		cat $FILENAME | sed "s/$SRCSTR/$DSTSTR/g" > /tmp/bstr.$$
+		mv /tmp/bstr.$$ $FILENAME
+		
+		CNT=`expr $CNT + 1`
+	fi
+done
+printf "完成，共处理了%d个文件\n" $CNT
+

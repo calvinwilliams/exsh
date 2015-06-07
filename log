@@ -1,0 +1,2 @@
+echo '{FILE *fp;fp=fopen("/tmp/trace","a");fprintf(fp,"111\n");fclose(fp);}'
+

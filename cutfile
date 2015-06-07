@@ -1,0 +1,48 @@
+# cutfile v1.0.0
+# copy & cut & paste file utility
+# copyright by calvin 2013
+
+if [ $# -eq 0 -o x"$1" = x"-v" ] ; then
+	echo "USAGE :       cutfile file ..."
+	echo "              cutfile [ -l | -c ]"
+	echo "DESCRIPTION :           -v : show this"
+	echo "                        -l : list file cuted"
+	echo "                        -c : clean file cuted"
+	exit 7
+fi
+
+CUTFILE_PID=`ps -ef | awk -v pid=$$ '{if($2==pid)print $3}'`
+SESSTION_PID=`ps -ef | awk -v ppid=$CUTFILE_PID '{if($2==ppid)print $3}'`
+CUTLIST_PATHFILENAME="/tmp/cutlist.$SESSTION_PID"
+
+if [ x"$1" = x"-l" ] ; then
+	cat $CUTLIST_PATHFILENAME
+	exit 0
+elif [ x"$1" = x"-c" ] ; then
+	if [ -f $CUTLIST_PATHFILENAME ] ; then rm $CUTLIST_PATHFILENAME ; fi
+	exit 0
+fi
+
+if [ -f $CUTLIST_PATHFILENAME ] ; then rm $CUTLIST_PATHFILENAME ; fi
+while [ x"$1" != x"" ] ; do
+	FILELIST="$1"
+	for FILE in `echo $FILELIST` ; do
+		if [ -f $FILE -o -d $FILE ] ; then
+			CURDIR=`pwd`
+			if [ x"$CURDIR" = x"/" ] ; then
+				printf "/%s\n" $1 >> $CUTLIST_PATHFILENAME
+			else
+				printf "%s/%s\n" $CURDIR $1 >> $CUTLIST_PATHFILENAME
+			fi
+		else
+			echo "$FILE not found"
+			if [ -f $CUTLIST_PATHFILENAME ] ; then rm $CUTLIST_PATHFILENAME ; fi
+			exit 1
+		fi
+	done
+	
+	shift
+done
+
+echo "cut ok , cutfile is $CUTLIST_PATHFILENAME"
+

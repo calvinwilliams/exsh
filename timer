@@ -1,0 +1,8 @@
+sec=$1
+shift
+while true
+do
+        $*
+        sleep $sec
+done
+

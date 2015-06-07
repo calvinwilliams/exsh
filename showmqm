@@ -1,0 +1,102 @@
+version()
+{
+	echo "showmqm v1.0.0"
+	echo "copyright by calvin 2013"
+}
+
+usage()
+{
+	echo "USAGE : showmqm [ -v | 队列管理器 [ 队列名 | 通道名 ] ]"
+}
+
+if [ $# -eq 0 ] ; then
+	usage
+	exit 7
+fi
+
+QMNAME=$1
+QNAME_OR_CHANNEL=$2
+
+if [ x"$QMNAME" == x"-v" ] ; then
+	version
+	usage
+	exit 0
+fi
+
+if [ x"$QNAME_OR_CHANNEL" != x"" ] ; then
+	echo "dis q(*)" | runmqsc $QMNAME | grep "QUEUE(" | grep -v "(SYSTEM." | tr ')' '(' | awk -F"(" '{print $2}' | while read QNAME ; do
+		if [ x"$QNAME" == x"$QNAME_OR_CHANNEL" ] ; then
+			echo "dis q($QNAME)" | runmqsc $QMNAME
+			exit 0
+		fi
+	done
+	echo "dis chl(*)" | runmqsc $QMNAME | grep -w CHANNEL | grep -v "(SYSTEM." | tr ')' '(' | awk -F"(" '{print $2}' | while read CHANNEL ; do
+		if [ x"$CHANNEL" == x"$QNAME_OR_CHANNEL" ] ; then
+			echo "dis chl($CHANNEL)" | runmqsc $QMNAME
+			echo "dis chs($CHANNEL)" | runmqsc $QMNAME
+			exit 0
+		fi
+	done
+	exit 1
+fi
+
+FIRSTLINE=0
+echo "dis q(*)" | runmqsc $QMNAME | grep "QUEUE(" | grep -v "(SYSTEM." | tr ')' '(' | awk -F"(" '{print $2}' | while read QNAME ; do
+	if [ $FIRSTLINE -eq 0 ] ; then
+		printf "%-7s %-20s %-10s %-10s %-19s\n" "TYPE" "QNAME" "CURDEPTH" "I/OPPROCS" "ALTDATETIME"
+		echo "-------------------------------------------------------------------------------"
+		FIRSTLINE=1
+	fi
+	
+	TYPE=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "TYPE" | tr ')' '(' | awk -F"(" '{print $4}'`
+	if [ x"$TYPE" == x"QLOCAL" ] ; then
+		CURDEPTH=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "CURDEPTH" | tr ')' '(' | awk -F"(" '{print $2}'`
+		MAXDEPTH=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "MAXDEPTH" | tr ')' '(' | awk -F"(" '{print $2}'`
+		DEPTH="$CURDEPTH/$MAXDEPTH"
+		IPPROCS=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "IPPROCS" | tr ')' '(' | awk -F"(" '{print $4}'`
+		OPPROCS=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "OPPROCS" | tr ')' '(' | awk -F"(" '{print $2}'`
+		if [ x"$IPPROCS" != x"" -a x"$OPPROCS" != x"" ] ; then
+			PPROCS="$IPPROCS/$OPPROCS"
+		fi
+		ALTDATE=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "ALTDATE" | tr ')' '(' | awk -F"(" '{print $4}'`
+		ALTTIME=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "ALTTIME" | tr ')' '(' | awk -F"(" '{print $2}'`
+		if [ x"$ALTDATE" != x"" -a x"$ALTTIME" != x"" ] ; then
+			ALTDATETIME="$ALTDATE $ALTTIME"
+		fi
+		
+		printf "%-7s %-20s %-10s %-10s %-10s %-8s\n" "$TYPE" "$QNAME" "$DEPTH" "$PPROCS" "$ALTDATETIME"
+	elif [ x"$TYPE" == x"QREMOTE" ] ; then
+		XMITQ=`echo "dis q($QNAME)" | runmqsc $QMNAME | grep -w "XMITQ" | tr ')' '(' | awk -F"(" '{print $4}'`
+		
+		printf "%-7s %s(%s)\n" "$TYPE" "$QNAME" "$XMITQ"
+	else
+		printf "%-7s %s\n" "$TYPE" "$QNAME"
+	fi
+done
+
+echo ""
+
+FIRSTLINE=0
+echo "dis chl(*)" | runmqsc $QMNAME | grep -w CHANNEL | grep -v "(SYSTEM." | tr ')' '(' | awk -F"(" '{print $2}' | while read CHANNEL ; do
+	if [ $FIRSTLINE -eq 0 ] ; then
+		printf "%-7s %-20s %-10s %-21s %-8s\n" "CHLTYPE" "CHANNEL" "XMITQ" "CONNAME" "STATUS"
+		echo "-------------------------------------------------------------------------------"
+		FIRSTLINE=1
+	fi
+	
+	CHLTYPE=`echo "dis chl($CHANNEL)" | runmqsc $QMNAME | grep -w "CHLTYPE" | tr ')' '(' | awk -F"(" '{print $4}'`
+	if [ x"$CHLTYPE" == x"SDR" ] ; then
+		XMITQ=`echo "dis chl($CHANNEL)" | runmqsc $QMNAME | grep -w "XMITQ" | tr ')' '(' | awk -F"(" '{print $2}'`
+		CONNAME1=`echo "dis chs($CHANNEL)" | runmqsc $QMNAME | grep -w "CONNAME" | tr ')' '(' | awk -F"(" '{print $2}'`
+		CONNAME2=`echo "dis chs($CHANNEL)" | runmqsc $QMNAME | grep -w "CONNAME" | tr ')' '(' | awk -F"(" '{print $3}'`
+		if [ x"$CONNAME1" != x"" -a x"$CONNAME2" != x"" ] ; then
+			CONNAME="$CONNAME1:$CONNAME2"
+		fi
+		STATUS=`echo "dis chs($CHANNEL)" | runmqsc $QMNAME | grep -w "STATUS" | tr ')' '(' | awk -F"(" '{print $4}'`
+		
+		printf "%-7s %-20s %-10s %-21s %-8s %-19s\n" "$CHLTYPE" "$CHANNEL" "$XMITQ" "$CONNAME" "$STATUS"
+	elif [ x"$CHLTYPE" == x"RCVR" -o x"$CHLTYPE" == x"SVRCONN" ] ; then
+		printf "%-7s %-20s %-10s %-21s %-8s\n" "$CHLTYPE" "$CHANNEL" "-" "-" "-"
+	fi
+done
+

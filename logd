@@ -1,0 +1,1 @@
+echo "hzb_log_debug( __FILE__ , __LINE__ , \"r=%d\" , r );"

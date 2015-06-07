@@ -1,0 +1,4 @@
+ps -e -o args | awk '{print $1}' | tr '-' ' ' | sort | uniq | while read PROG ; do
+	ps -e -o rss,vsz,args | grep -F "$PROG" | grep -v grep | awk -vPROG="$PROG" 'BEGIN{s1=0;s2=0;s3=0}{s1+=1;s2+=$1;s3+=$2}END{printf "%10ld %10ld %10ld %s\n",s1,s2,s3,PROG}'
+done | sort -k 2nr | more
+

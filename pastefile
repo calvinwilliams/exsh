@@ -1,0 +1,86 @@
+# cutfile v1.0.0
+# copy & cut & paste file utility
+# copyright by calvin 2013
+
+if [ x"$1" = x"-v" ] ; then
+	echo "USAGE : pastefile [ cutlist | copylist ]"
+	echo "        pastefile [ -v | -l | -c ]"
+	echo "DESCRIPTION :       -v : show this"
+	echo "                    -l : list file cuted"
+	echo "                    -c : clean file cuted"
+	exit 7
+fi
+
+CUTFILE_PID=`ps -ef | awk -v pid=$$ '{if($2==pid)print $3}'`
+SESSTION_PID=`ps -ef | awk -v ppid=$CUTFILE_PID '{if($2==ppid)print $3}'`
+if [ x"$1" != x"" ] ; then
+	PATHFILENAME=$1
+	FILENAME=`basename $PATHFILENAME`
+	echo $FILENAME | grep -E "^copy" > /dev/null
+	if [ $? -eq 0 ] ; then
+		COPYLIST_PATHFILENAME=$PATHFILENAME
+		CUTLIST_PATHFILENAME=""
+	else
+		echo $FILENAME | grep -E "^cut" > /dev/null
+		if [ $? -eq 0 ] ; then
+			COPYLIST_PATHFILENAME=""
+			CUTLIST_PATHFILENAME=$PATHFILENAME
+		else
+			echo "$PATHFILENAME invalid"
+			exit 1
+		fi
+	fi
+else
+	COPYLIST_PATHFILENAME="/tmp/copylist.$SESSTION_PID"
+	CUTLIST_PATHFILENAME="/tmp/cutlist.$SESSTION_PID"
+fi
+
+if [ x"$1" = x"-l" ] ; then
+	cat $CUTLIST_PATHFILENAME
+	exit 0
+elif [ x"$1" = x"-c" ] ; then
+	if [ -f $CUTLIST_PATHFILENAME ] ; then rm $CUTLIST_PATHFILENAME ; fi
+	exit 0
+fi
+
+if [ ! -w . ] ; then
+	echo ". not writable"
+	exit 1
+fi
+
+###### 处理/tmp/copyfile.(pid)文件
+
+if [ x"$COPYLIST_PATHFILENAME" != x"" -a -f "$COPYLIST_PATHFILENAME" ] ; then
+	while read FILE ; do
+		if [ x"$FILE" != x"" ] ; then
+			if [ -f $FILE ] ; then
+				echo cp $FILE .
+				cp $FILE .
+			elif [ -d $FILE ] ; then
+				echo cp -r $FILE .
+				cp -r $FILE .
+			fi
+		fi
+	done < $COPYLIST_PATHFILENAME
+	
+	if [ -w "$COPYLIST_PATHFILENAME" ] ; then rm $COPYLIST_PATHFILENAME ; fi
+fi
+
+###### 处理/tmp/cutfile.(pid)文件
+
+if [ x"$CUTLIST_PATHFILENAME" != x"" -a -f "$CUTLIST_PATHFILENAME" ] ; then
+	while read FILE ; do
+		if [ x"$FILE" != x"" ] ; then
+			if [ -f $FILE ] ; then
+				echo mv $FILE .
+				mv $FILE .
+			elif [ -d $FILE ] ; then
+				echo mv $FILE .
+				mv $FILE .
+			fi
+		fi
+	done < $CUTLIST_PATHFILENAME
+	
+	if [ -w "$CUTLIST_PATHFILENAME" ] ; then rm $CUTLIST_PATHFILENAME ; fi
+fi
+
